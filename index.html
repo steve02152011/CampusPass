@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CrossPass 暢行 Pass - 保留完整軌跡 Glassmorphism 版</title>
+  <style>
+    :root {
+      --primary-color: #007aff;
+      --accent-color: #ff3b30;
+      --success-color: #34c759;
+      --glass-bg: rgba(255, 255, 255, 0.55);
+      --glass-border: rgba(255, 255, 255, 0.75);
+      --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #a8c0ff 0%, #3f2b96 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    .phone-frame {
+      width: 100%;
+      max-width: 390px;
+      height: 844px;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1.5px solid rgba(255, 255, 255, 0.5);
+      border-radius: 48px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), inset 0 0 15px rgba(255, 255, 255, 0.3);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    header {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      right: 16px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      color: #1d1d1f;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      box-shadow: var(--glass-shadow);
+      z-index: 10;
+      pointer-events: none;
+    }
+    .nav-icon { font-size: 22px; margin-right: 12px; }
+    .nav-text h4 { font-size: 15px; font-weight: 700; color: #1d1d1f; }
+    .nav-text span { font-size: 12px; color: #48484a; font-weight: 600; }
+
+    .map-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      cursor: grab;
+      user-select: none;
+    }
+    .map-container:active {
+      cursor: grabbing;
+    }
+
+    .map-content {
+      position: absolute;
+      width: 800px;
+      height: 1000px;
+      top: 0;
+      left: 0;
+      transform-origin: 0 0;
+      will-change: transform;
+    }
+
+    .map-image {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+    }
+
+    .map-glass-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: contrast(0.95) brightness(1.05);
+      pointer-events: none;
+    }
+
+    .red-shooting-zone {
+      position: absolute;
+      top: 480px;
+      left: 140px;
+      width: 180px;
+      height: 120px;
+      background: rgba(255, 59, 48, 0.28);
+      backdrop-filter: blur(6px);
+      border: 2px dashed var(--accent-color);
+      color: #d70015;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 800;
+      border-radius: 18px;
+      z-index: 4;
+      box-shadow: 0 6px 20px rgba(255, 59, 48, 0.25);
+      text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+      pointer-events: none;
+    }
+
+    svg.route-svg {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .user-dot {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      background-color: var(--primary-color);
+      border: 3px solid #ffffff;
+      border-radius: 50%;
+      box-shadow: 0 0 16px rgba(0, 122, 255, 0.9), 0 2px 8px rgba(0,0,0,0.3);
+      transform: translate(-50%, -50%);
+      transition: left 0.6s ease-in-out, top 0.6s ease-in-out;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    .bottom-card {
+      position: absolute;
+      bottom: 20px;
+      left: 16px;
+      right: 16px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border: 1px solid var(--glass-border);
+      padding: 20px;
+      border-radius: 28px;
+      box-shadow: var(--glass-shadow);
+      z-index: 10;
+      pointer-events: none;
+    }
+    .instruction-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: #1d1d1f;
+      margin-bottom: 6px;
+    }
+    .instruction-sub {
+      font-size: 13px;
+      color: #3a3a3c;
+      line-height: 1.4;
+      font-weight: 600;
+    }
+
+    .arrival-modal {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.25);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      cursor: pointer;
+    }
+    .arrival-card {
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      border: 1.5px solid rgba(255, 255, 255, 0.85);
+      padding: 32px 24px;
+      border-radius: 32px;
+      text-align: center;
+      width: 82%;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+    }
+    .arrival-card h3 { font-size: 20px; color: #248a3d; font-weight: 800; margin-bottom: 10px; }
+    .arrival-card p { font-size: 14px; color: #1c1c1e; font-weight: 600; margin-bottom: 20px; }
+
+    .vibrating { animation: shake 0.4s infinite; }
+    @keyframes shake {
+      0% { transform: translate(1px, 1px); }
+      20% { transform: translate(-3px, 0px); }
+      40% { transform: translate(1px, -1px); }
+      60% { transform: translate(-1px, 2px); }
+      100% { transform: translate(-1px, -2px); }
+    }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body onclick="handleGlobalClick(event)">
+
+  <div class="phone-frame" id="phoneContainer">
+    <header>
+      <div class="nav-icon">🧭</div>
+      <div class="nav-text">
+        <h4 id="topTitle">前往 實驗大樓 / D棟</h4>
+        <span id="topSub">可拖拽地圖；點擊移動位置</span>
+      </div>
+    </header>
+
+    <div class="map-container" id="mapContainer">
+      <div class="map-content" id="mapContent">
+        <img src="image_30e405.png" alt="校園地圖" class="map-image" />
+        <div class="map-glass-overlay"></div>
+
+        <div class="red-shooting-zone" id="redZone">
+          <span>🔴 A8 白宮拍攝區</span>
+          <span style="font-size: 10px; margin-top: 4px;">器材線材佔用中</span>
+        </div>
+
+        <svg class="route-svg">
+          <!-- 走過的路徑歷史線 (深藍色) -->
+          <path id="walkedHistoryPath" d="M 230 780" fill="none" stroke="#007aff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+          <!-- 推薦繞道路線預覽 (綠色虛線/實線) -->
+          <path id="recommendedPath" d="" fill="none" stroke="#34c759" stroke-width="6" stroke-dasharray="8 6" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+
+        <div class="user-dot" id="userDot" style="top: 780px; left: 230px;"></div>
+      </div>
+    </div>
+
+    <div class="bottom-card">
+      <div class="instruction-title" id="cardTitle">自由導航中 (保留走過軌跡)</div>
+      <div class="instruction-sub" id="cardSub">您走過的所有路線都會保留在畫面上！請點擊朝前方 A8 白宮移動。</div>
+    </div>
+  </div>
+
+  <div class="arrival-modal hidden" id="arrivalModal" onclick="resetApp()">
+    <div class="arrival-card">
+      <h3>🎉 目的地已到達！</h3>
+      <p>您已成功點擊綠線繞過 A8 白宮拍攝區，完整軌跡已記錄。</p>
+      <span style="font-size: 12px; color: #636366;">(點擊畫面任意處返回初始畫面)</span>
+    </div>
+  </div>
+
+  <script>
+    let mode = 'free'; // 'free', 'guided'
+    let guidedStep = 0;
+    
+    // 點位歷程點陣列 (一開始在校門口警衛室: 230, 780)
+    let pathPoints = [{x: 230, y: 780}];
+
+    const dot = document.getElementById('userDot');
+    const walkedPath = document.getElementById('walkedHistoryPath');
+    const recPath = document.getElementById('recommendedPath');
+    const phone = document.getElementById('phoneContainer');
+    const container = document.getElementById('mapContainer');
+    const content = document.getElementById('mapContent');
+
+    // 拖拽平移邏輯變數
+    let isDragging = false;
+    let startX = 0, startY = 0;
+    let currentX = -100, currentY = -200; // 預設視角集中在起點區域
+    let dragDistance = 0;
+
+    function updateMapTransform() {
+      // 限制拖曳邊界
+      const minX = container.clientWidth - 800;
+      const minY = container.clientHeight - 1000;
+      currentX = Math.min(0, Math.max(minX, currentX));
+      currentY = Math.min(0, Math.max(minY, currentY));
+      content.style.transform = `translate(${currentX}px, ${currentY}px)`;
+    }
+    updateMapTransform();
+
+    // 拖拽事件監聽
+    container.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      startX = e.clientX - currentX;
+      startY = e.clientY - currentY;
+      dragDistance = 0;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const newX = e.clientX - startX;
+      const newY = e.clientY - startY;
+      dragDistance += Math.abs(newX - currentX) + Math.abs(newY - currentY);
+      currentX = newX;
+      currentY = newY;
+      updateMapTransform();
+    });
+
+    window.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+
+    // 觸控支援
+    container.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        isDragging = true;
+        startX = e.touches[0].clientX - currentX;
+        startY = e.touches[0].clientY - currentY;
+        dragDistance = 0;
+      }
+    });
+
+    container.addEventListener('touchmove', (e) => {
+      if (!isDragging || e.touches.length !== 1) return;
+      const newX = e.touches[0].clientX - startX;
+      const newY = e.touches[0].clientY - startY;
+      dragDistance += Math.abs(newX - currentX) + Math.abs(newY - currentY);
+      currentX = newX;
+      currentY = newY;
+      updateMapTransform();
+    });
+
+    container.addEventListener('touchend', () => {
+      isDragging = false;
+    });
+
+    // 更新 SVG 的歷史線軌跡 (走過不消失)
+    function redrawWalkedPath() {
+      if (pathPoints.length === 0) return;
+      let d = `M ${pathPoints[0].x} ${pathPoints[0].y}`;
+      for (let i = 1; i < pathPoints.length; i++) {
+        d += ` L ${pathPoints[i].x} ${pathPoints[i].y}`;
+      }
+      walkedPath.setAttribute('d', d);
+    }
+
+    // 地圖點擊事件（過濾掉拖拽動作）
+    container.addEventListener('click', (e) => {
+      if (dragDistance > 8) return; // 滑動距離過大代表拖拽，不觸發點擊移動
+
+      const rect = content.getBoundingClientRect();
+      const x = Math.round(e.clientX - rect.left);
+      const y = Math.round(e.clientY - rect.top);
+
+      if (mode === 'free') {
+        // 移動定位點並記錄進歷史點陣列
+        dot.style.left = x + 'px';
+        dot.style.top = y + 'px';
+        pathPoints.push({x: x, y: y});
+        redrawWalkedPath();
+
+        // 觸碰 A8 白宮拍攝區判定 (y: 450~580, x: 120~300)
+        if (y > 450 && y < 580 && x > 120 && x < 300) {
+          triggerAutoRoute();
+        }
+      } 
+      else if (mode === 'guided') {
+        executeGuidedStep();
+      }
+    });
+
+    // 觸碰紅區：自動跳出推薦綠線
+    function triggerAutoRoute() {
+      mode = 'guided';
+      guidedStep = 1;
+
+      phone.classList.add('vibrating');
+      setTimeout(() => { phone.classList.remove('vibrating'); }, 600);
+
+      // 自動將定位點拉回安全點並記錄
+      const safePoint = {x: 230, y: 620};
+      dot.style.top = safePoint.y + "px";
+      dot.style.left = safePoint.x + "px";
+      pathPoints.push(safePoint);
+      redrawWalkedPath();
+
+      // 產生繞過白宮與志生紀念館的外圍綠線
+      recPath.setAttribute('d', "M 230 620 L 520 620 L 520 220");
+
+      document.getElementById('cardTitle').innerText = "📳 觸碰紅區！已自動出現綠線";
+      document.getElementById('cardSub').innerText = "請直接點擊畫面上出現的『綠色路線』，一路繞行前往目的地！";
+      document.getElementById('topSub').innerText = "請點擊綠線分步導航";
+    }
+
+    // 點擊綠線分步移動（走過路線全保留）
+    function executeGuidedStep() {
+      if (mode !== 'guided') return;
+
+      if (guidedStep === 1) {
+        // 第一步：橫向平移至電機大樓右側 (520, 620)
+        const step1Point = {x: 520, y: 620};
+        dot.style.top = step1Point.y + "px";
+        dot.style.left = step1Point.x + "px";
+        pathPoints.push(step1Point);
+        redrawWalkedPath();
+
+        document.getElementById('cardTitle').innerText = "🟢 正在沿著綠線移動 (1/2)";
+        document.getElementById('cardSub').innerText = "已順利繞過 A8 白宮拍攝區！請繼續點擊上方綠線直行。";
+        guidedStep = 2;
+
+      } else if (guidedStep === 2) {
+        // 第二步：直行抵達實驗大樓/目的地 (520, 220)
+        const step2Point = {x: 520, y: 220};
+        dot.style.top = step2Point.y + "px";
+        dot.style.left = step2Point.x + "px";
+        pathPoints.push(step2Point);
+        redrawWalkedPath();
+
+        document.getElementById('cardTitle').innerText = "🎉 順暢抵達目的地！";
+        document.getElementById('cardSub').innerText = "您已成功記錄完整繞行軌跡並安全抵達！";
+
+        setTimeout(() => {
+          document.getElementById('arrivalModal').classList.remove('hidden');
+        }, 400);
+      }
+    }
+
+    // 重置應用程式
+    function resetApp() {
+      mode = 'free';
+      guidedStep = 0;
+      pathPoints = [{x: 230, y: 780}];
+      
+      document.getElementById('arrivalModal').classList.add('hidden');
+      dot.style.top = "780px";
+      dot.style.left = "230px";
+      
+      redrawWalkedPath();
+      recPath.setAttribute('d', "");
+
+      document.getElementById('cardTitle').innerText = "自由導航中 (保留走過軌跡)";
+      document.getElementById('cardSub').innerText = "您走過的所有路線都會保留在畫面上！請點擊朝前方 A8 白宮移動。";
+      document.getElementById('topSub').innerText = "可拖拽地圖；點擊移動位置";
+    }
+
+    function handleGlobalClick(event) {
+      if (document.getElementById('arrivalModal').classList.contains('hidden') === false) {
+        resetApp();
+      }
+    }
+  </script>
+
+</body>
+</html>
