@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CrossPass 暢行 Pass - 保留完整軌跡 Glassmorphism 版</title>
+  <title>CrossPass 暢行 Pass - 保留完整軌跡</title>
   <style>
     :root {
       --primary-color: #007aff;
@@ -245,7 +245,7 @@
     </div>
 
     <div class="bottom-card">
-      <div class="instruction-title" id="cardTitle">自由導航中 (保留走過軌跡)</div>
+      <div class="instruction-title" id="cardTitle">自由導航中</div>
       <div class="instruction-sub" id="cardSub">您走過的所有路線都會保留在畫面上！請點擊朝前方 A8 白宮移動。</div>
     </div>
   </div>
@@ -253,7 +253,7 @@
   <div class="arrival-modal hidden" id="arrivalModal" onclick="resetApp()">
     <div class="arrival-card">
       <h3>🎉 目的地已到達！</h3>
-      <p>您已成功點擊綠線繞過 A8 白宮拍攝區，完整軌跡已記錄。</p>
+      <p>您已成功點擊綠線繞過 A8 白宮拍攝區。</p>
       <span style="font-size: 12px; color: #636366;">(點擊畫面任意處返回初始畫面)</span>
     </div>
   </div>
@@ -438,7 +438,7 @@
       redrawWalkedPath();
       recPath.setAttribute('d', "");
 
-      document.getElementById('cardTitle').innerText = "自由導航中 (保留走過軌跡)";
+      document.getElementById('cardTitle').innerText = "自由導航中";
       document.getElementById('cardSub').innerText = "您走過的所有路線都會保留在畫面上！請點擊朝前方 A8 白宮移動。";
       document.getElementById('topSub').innerText = "可拖拽地圖；點擊移動位置";
     }
